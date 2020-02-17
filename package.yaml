@@ -1,0 +1,37 @@
+name:                ansitable
+version:             0.1.0.0
+github:              "stridervc/ansitable"
+license:             BSD3
+author:              "Fred Strauss"
+maintainer:          "fred@strider.co.za"
+copyright:           "2020 Fred Strauss &lt;fred@strider.co.za&gt;"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/stridervc/ansitable#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+
+library:
+  source-dirs: src
+
+tests:
+  ansitable-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - ansitable
