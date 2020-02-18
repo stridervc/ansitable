@@ -24,6 +24,8 @@ dependencies:
 
 library:
   source-dirs: src
+  dependencies:
+  - ansi-terminal
 
 tests:
   ansitable-test:
