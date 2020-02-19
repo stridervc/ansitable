@@ -29,33 +29,55 @@ maxLength = foldl (\acc x -> if length (content x) > acc then length (content x)
 zipWidths :: [Width] -> [Cell] -> [(Cell, Width)]
 zipWidths ws cs = zip cs ws
 
-putPadded :: (Cell, Width) -> IO ()
-putPadded (c,w) = do
+putContents :: (Cell, Width) -> IO ()
+putContents (c,w) = do
+  putStr "│ "
   setSGR $ sgr c
   putStr $ s
   putStr $ replicate (w+1-length s) ' '
   setSGR [ Reset ]
   where s = content c
 
-putPaddedLine :: [(Cell, Width)] -> IO ()
-putPaddedLine cs = do
-  mapM_ putPadded cs
-  putStrLn ""
+putContentsLine :: [(Cell, Width)] -> IO ()
+putContentsLine cs = do
+  mapM_ putContents cs
+  putStrLn "│"
+
+putTopBorder :: [Width] -> IO ()
+putTopBorder cs = do
+  let hlines = map (\w -> replicate (w+2) '─') cs
+  putStr "┌"
+  putStr $ intercalate "┬" hlines
+  putStrLn "┐"
+
+putBottomBorder :: [Width] -> IO ()
+putBottomBorder cs = do
+  let hlines = map (\w -> replicate (w+2) '─') cs
+  putStr "└"
+  putStr $ intercalate "┴" hlines
+  putStrLn "┘"
+
+putMiddleBorder :: [Width] -> IO ()
+putMiddleBorder cs = do
+  let hlines = map (\w -> replicate (w+2) '─') cs
+  putStr "├"
+  putStr $ intercalate "┼" hlines
+  putStrLn "┤"
 
 showTable :: [[Cell]] -> IO ()
 showTable t = do
-  mapM_ putPaddedLine z
+  putTopBorder widths
+  mapM_ putContentsLine $ [head z]
+  putMiddleBorder widths
+  mapM_ putContentsLine $ tail z
+  putBottomBorder widths
+
   where tt = transpose t
         widths = map maxLength tt
         z = map (zipWidths widths) t
 
 showStringTable :: [[String]] -> IO ()
-showStringTable t = do
-  mapM_ putPaddedLine z
-  where tt = transpose ct
-        widths = map maxLength tt
-        z = map (zipWidths widths) ct
-        ct = map (map cellFromString) t
+showStringTable = showTable . map (map cellFromString)
 
 {--
  - (H1, C1W), (H2, C2W)
