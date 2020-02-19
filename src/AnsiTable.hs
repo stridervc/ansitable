@@ -1,5 +1,7 @@
 module AnsiTable
     ( Cell (..)
+    , Row
+    , Table
     , Alignment (..)
     , cellFromString
     , showStringTable
@@ -10,6 +12,8 @@ import Data.List
 import System.Console.ANSI
 
 type Width = Int
+type Row = [Cell]
+type Table = [Row]
 data Alignment = AlignLeft | AlignRight
 
 data Cell = Cell { sgr :: [SGR]
@@ -23,10 +27,10 @@ cellFromString cs = Cell { sgr = [Reset]
                          , align = AlignLeft
                          }
 
-maxLength :: [Cell] -> Width
+maxLength :: Row -> Width
 maxLength = foldl (\acc x -> if length (content x) > acc then length (content x) else acc) 0
 
-zipWidths :: [Width] -> [Cell] -> [(Cell, Width)]
+zipWidths :: [Width] -> Row -> [(Cell, Width)]
 zipWidths ws cs = zip cs ws
 
 putContents :: (Cell, Width) -> IO ()
@@ -64,7 +68,7 @@ putMiddleBorder cs = do
   putStr $ intercalate "┼" hlines
   putStrLn "┤"
 
-showTable :: [[Cell]] -> IO ()
+showTable :: Table -> IO ()
 showTable t = do
   putTopBorder widths
   mapM_ putContentsLine $ [head z]
