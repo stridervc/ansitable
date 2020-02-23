@@ -16,13 +16,13 @@ type Row = [Cell]
 type Table = [Row]
 data Alignment = AlignLeft | AlignRight
 
-data Cell = Cell { sgr :: [SGR]
+data Cell = Cell { color :: [SGR]
                  , content :: String
                  , align :: Alignment
                  }
 
 cellFromString :: String -> Cell
-cellFromString cs = Cell { sgr = [Reset]
+cellFromString cs = Cell { color = [Reset]
                          , content = cs
                          , align = AlignLeft
                          }
@@ -36,7 +36,7 @@ zipWidths ws cs = zip cs ws
 putContents :: (Cell, Width) -> IO ()
 putContents (c,w) = do
   putStr "│ "
-  setSGR $ sgr c
+  setSGR $ color c
   putStr $ s
   putStr $ replicate (w+1-length s) ' '
   setSGR [ Reset ]
