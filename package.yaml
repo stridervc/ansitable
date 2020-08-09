@@ -27,6 +27,17 @@ library:
   dependencies:
   - ansi-terminal
 
+executables:
+  ansitable:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - ansitable
+
 tests:
   ansitable-test:
     main:                Spec.hs

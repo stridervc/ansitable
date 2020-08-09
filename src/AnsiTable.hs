@@ -1,95 +1,90 @@
 module AnsiTable
-    ( Cell (..)
-    , Row
-    , Table
-    , Alignment (..)
-    , cellFromString
-    , showStringTable
-    , showTable
+    ( newTable
+    , withBorder
+    , withHeading
+    , cell
+    , printTable
+    , (===)
+    , ($+)
     ) where
 
-import Data.List
 import System.Console.ANSI
+import Data.List (transpose, intercalate)
+import Control.Monad (when)
 
-type Width = Int
-type Row = [Cell]
-type Table = [Row]
-data Alignment = AlignLeft | AlignRight
+type Row    = [Cell]
+type Width  = Int
 
-data Cell = Cell { color :: [SGR]
-                 , content :: String
-                 , align :: Alignment
-                 }
+data Alignment  = AlignLeft | AlignRight
 
-cellFromString :: String -> Cell
-cellFromString cs = Cell { color = [Reset]
-                         , content = cs
-                         , align = AlignLeft
-                         }
+data AnsiTable = AnsiTable
+  { border      :: Bool
+  , heading     :: Bool
+  , rows        :: [Row]
+  , alignments  :: [Alignment]
+  }
 
-maxLength :: Row -> Width
-maxLength = foldl (\acc x -> if length (content x) > acc then length (content x) else acc) 0
+data Cell = Cell
+  { color   :: [SGR]
+  , content :: String
+  }
 
-zipWidths :: [Width] -> Row -> [(Cell, Width)]
-zipWidths ws cs = zip cs ws
+newTable :: AnsiTable
+newTable = AnsiTable
+  { border      = False
+  , heading     = False
+  , rows        = []
+  , alignments  = repeat AlignLeft
+  }
 
-putContents :: (Cell, Width) -> IO ()
-putContents (c,w) = do
-  putStr "│ "
-  setSGR $ color c
-  putStr $ s
-  putStr $ replicate (w+1-length s) ' '
-  setSGR [ Reset ]
-  where s = content c
+withBorder :: AnsiTable -> AnsiTable
+withBorder t = t { border = True }
 
-putContentsLine :: [(Cell, Width)] -> IO ()
-putContentsLine cs = do
-  mapM_ putContents cs
-  putStrLn "│"
+withHeading :: AnsiTable -> AnsiTable
+withHeading t = t { heading = True }
 
-putTopBorder :: [Width] -> IO ()
-putTopBorder cs = do
-  let hlines = map (\w -> replicate (w+2) '─') cs
-  putStr "┌"
-  putStr $ intercalate "┬" hlines
-  putStrLn "┐"
+cell :: String -> Cell
+cell s = Cell
+  { color = []
+  , content = s
+  }
 
-putBottomBorder :: [Width] -> IO ()
-putBottomBorder cs = do
-  let hlines = map (\w -> replicate (w+2) '─') cs
-  putStr "└"
-  putStr $ intercalate "┴" hlines
-  putStrLn "┘"
+printTable :: AnsiTable -> IO ()
+printTable t = do
+  when (border t) (printHorizBorder colwidths "┌" "┬" "┐")
+  printRow (border t) colwidths header
+  when (heading t) (printHorizBorder colwidths "├" "┼" "┤")
+  mapM_ (printRow (border t) colwidths) rest
+  when (border t) (printHorizBorder colwidths "└" "┴" "┘")
+  where colwidths = map (maximum . (map (length . content))) $ transpose $ rows t
+        header    = head $ rows t
+        rest      = tail $ rows t
 
-putMiddleBorder :: [Width] -> IO ()
-putMiddleBorder cs = do
-  let hlines = map (\w -> replicate (w+2) '─') cs
-  putStr "├"
-  putStr $ intercalate "┼" hlines
-  putStrLn "┤"
+(===) :: AnsiTable -> Row -> AnsiTable
+(===) t r = t { rows = rows t ++ [r] }
 
-showTable :: Table -> IO ()
-showTable t = do
-  putTopBorder widths
-  mapM_ putContentsLine $ [head z]
-  putMiddleBorder widths
-  mapM_ putContentsLine $ tail z
-  putBottomBorder widths
+($+) :: AnsiTable -> (AnsiTable -> AnsiTable) -> AnsiTable
+($+) t f = f t
 
-  where tt = transpose t
-        widths = map maxLength tt
-        z = map (zipWidths widths) t
+padString :: Width -> String -> String
+padString w s = s ++ (take (w - length s) $ repeat ' ')
 
-showStringTable :: [[String]] -> IO ()
-showStringTable = showTable . map (map cellFromString)
+printCell :: (Width,Cell) -> IO ()
+printCell (w,c) = putStr $ padString w $ content c
 
-{--
- - (H1, C1W), (H2, C2W)
- - (V1, C1W), (V2, C2W)
- --}
- 
-{--
-a = [ ["H1", "H2", "H3"]
-    , ["V1", "V2", "V3"]
-    ]
---}
+printHorizBorder :: [Width] -> String -> String -> String -> IO ()
+printHorizBorder ws l m r = do
+  putStrLn $ l ++ line ++ r
+  where line' = map (\x -> take x (repeat '─')) ws
+        line  = intercalate m line'
+
+printRow :: Bool -> [Width] -> Row -> IO ()
+printRow border ws r = do
+  when border (putStr "│")
+  mapM_ (\wc' -> printCell wc' >> putStr sep) $ init wc
+  printCell $ last wc
+  when border (putStr "│")
+  putStrLn ""
+  where wc  = zip ws r
+        sep = if border then "│" else " "
+
