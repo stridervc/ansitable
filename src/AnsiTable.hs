@@ -2,6 +2,8 @@ module AnsiTable
     ( newTable
     , withBorder
     , withHeading
+    , withAlignments
+    , Alignment (..)
     , cell
     , printTable
     , (===)
@@ -43,6 +45,9 @@ withBorder t = t { border = True }
 withHeading :: AnsiTable -> AnsiTable
 withHeading t = t { heading = True }
 
+withAlignments :: [Alignment] -> AnsiTable -> AnsiTable
+withAlignments as t = t { alignments = as ++ repeat AlignLeft }
+
 cell :: String -> Cell
 cell s = Cell
   { color = []
@@ -52,13 +57,18 @@ cell s = Cell
 printTable :: AnsiTable -> IO ()
 printTable t = do
   when (border t) (printHorizBorder colwidths "┌" "┬" "┐")
-  printRow (border t) colwidths header
+  if (heading t) then
+    printRow (border t) colwidths lo header
+  else
+    printRow (border t) colwidths as header
   when (heading t) (printHorizBorder colwidths "├" "┼" "┤")
-  mapM_ (printRow (border t) colwidths) rest
+  mapM_ (printRow (border t) colwidths as) rest
   when (border t) (printHorizBorder colwidths "└" "┴" "┘")
   where colwidths = map (maximum . (map (length . content))) $ transpose $ rows t
         header    = head $ rows t
         rest      = tail $ rows t
+        as        = alignments t
+        lo        = repeat AlignLeft
 
 (===) :: AnsiTable -> Row -> AnsiTable
 (===) t r = t { rows = rows t ++ [r] }
@@ -66,11 +76,12 @@ printTable t = do
 ($+) :: AnsiTable -> (AnsiTable -> AnsiTable) -> AnsiTable
 ($+) t f = f t
 
-padString :: Width -> String -> String
-padString w s = s ++ (take (w - length s) $ repeat ' ')
+padString :: Alignment -> Width -> String -> String
+padString AlignLeft w s   = s ++ (take (w - length s) $ repeat ' ')
+padString AlignRight w s  = (take (w - length s) $ repeat ' ') ++ s
 
-printCell :: (Width,Cell) -> IO ()
-printCell (w,c) = putStr $ padString w $ content c
+printCell :: (Width,Cell,Alignment) -> IO ()
+printCell (w,c,a) = putStr $ padString a w $ content c
 
 printHorizBorder :: [Width] -> String -> String -> String -> IO ()
 printHorizBorder ws l m r = do
@@ -78,13 +89,13 @@ printHorizBorder ws l m r = do
   where line' = map (\x -> take x (repeat '─')) ws
         line  = intercalate m line'
 
-printRow :: Bool -> [Width] -> Row -> IO ()
-printRow border ws r = do
+printRow :: Bool -> [Width] -> [Alignment] -> Row -> IO ()
+printRow border ws as r = do
   when border (putStr "│")
-  mapM_ (\wc' -> printCell wc' >> putStr sep) $ init wc
-  printCell $ last wc
+  mapM_ (\wc' -> printCell wc' >> putStr sep) $ init wca
+  printCell $ last wca
   when border (putStr "│")
   putStrLn ""
-  where wc  = zip ws r
+  where wca = zip3 ws r as
         sep = if border then "│" else " "
 
