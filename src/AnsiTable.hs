@@ -5,9 +5,11 @@ module AnsiTable
     , withAlignments
     , Alignment (..)
     , cell
-    , printTable
+    , addRow
+    , addRows
     , (===)
     , ($+)
+    , printTable
     ) where
 
 import System.Console.ANSI
@@ -54,6 +56,18 @@ cell s = Cell
   , content = s
   }
 
+addRow :: AnsiTable -> Row -> AnsiTable
+addRow t r = t { rows = rows t ++ [r] }
+
+addRows :: AnsiTable -> [Row] -> AnsiTable
+addRows t rs = t { rows = rows t ++ rs }
+
+(===) :: AnsiTable -> Row -> AnsiTable
+(===) = addRow
+
+($+) :: AnsiTable -> (AnsiTable -> AnsiTable) -> AnsiTable
+($+) t f = f t
+
 printTable :: AnsiTable -> IO ()
 printTable t = do
   when (border t) (printHorizBorder colwidths "┌" "┬" "┐")
@@ -69,12 +83,6 @@ printTable t = do
         rest      = tail $ rows t
         as        = alignments t
         lo        = repeat AlignLeft
-
-(===) :: AnsiTable -> Row -> AnsiTable
-(===) t r = t { rows = rows t ++ [r] }
-
-($+) :: AnsiTable -> (AnsiTable -> AnsiTable) -> AnsiTable
-($+) t f = f t
 
 padString :: Alignment -> Width -> String -> String
 padString AlignLeft w s   = s ++ (take (w - length s) $ repeat ' ')
