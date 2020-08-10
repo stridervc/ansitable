@@ -75,7 +75,7 @@ printTable t = do
     printRow (border t) colwidths lo header
   else
     printRow (border t) colwidths as header
-  when (heading t) (printHorizBorder colwidths "├" "┼" "┤")
+  when (border t) (printHorizBorder colwidths "├" "┼" "┤")
   mapM_ (printRow (border t) colwidths as) rest
   when (border t) (printHorizBorder colwidths "└" "┴" "┘")
   where colwidths = map (maximum . (map (length . content))) $ transpose $ rows t
