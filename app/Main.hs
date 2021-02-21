@@ -8,8 +8,8 @@ main = do
             $+ withBorder
             $+ withHeading
             $+ withAlignments [AlignLeft, AlignRight]
-            === [cell "Name", cell "Amount"]
-            === [cell "John Doe", cell "123456789"]
-            === [cell "Jane Doe", cell "4567"]
+            === Cells [cell "Name", cell "Amount"]
+            === Cells [cell "John Doe", cell "123456789"]
+            === Cells [cell "Jane Doe", cell "4567"]
 
   printTable t
